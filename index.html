@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>AR application</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Using three.js for Augumented Reality Application">
+    <style>
+        header,
+        footer {
+            color: gray;
+            text-align: center;
+        }
+
+        header {
+            font-style: italic;
+        }
+
+        body {
+            margin: 0;     
+            overflow-x: hidden;
+        }
+
+        #canvasImg {
+            width: 100%;
+            height: 100%;
+        }
+
+    </style>
+</head>
+
+<body>
+    <header id="header">
+        <h1>Adventures in AR</h1>
+    </header>
+
+    <div id="canvasImg"></div>
+
+    <script type="module">
+        import * as THREE from './build/three.module.js';
+        import { OrbitControls } from './js/OrbitControls.js';
+        import { FlakesTexture } from './js/FlakesTexture.js';
+        import { RGBELoader } from './js/RGBELoader.js';
+
+
+        let scene, camera, renderer, controls, pointlight;
+        
+        function init() {
+        scene = new THREE.Scene();
+        renderer = new THREE.WebGLRenderer({alpha: true, antialias: true});   
+
+        renderer.setSize(window.innerWidth * 0.85, window.innerHeight* 0.85); //to resize the canvas 
+      // renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById("canvasImg").appendChild(renderer.domElement) // to place the renderer object on web page
+
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.25;
+
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 1, 1000);
+        camera.position.set(0, 0, 400);
+        controls = new OrbitControls(camera, renderer.domElement);
+        
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.7;
+        controls.enableDamping = true; 
+
+        pointlight = new THREE.PointLight(0xFF0000, 1);
+        pointlight.position.set(200, 200, 2000);
+        scene.add(pointlight);
+
+        let envmaploader = new THREE.PMREMGenerator(renderer);
+
+        new RGBELoader().setPath('textures/').load('golf_course_sunrise_4k.hdr', function(hdrmap) {
+
+        let envmap = envmaploader.fromCubemap(hdrmap);
+        let texture = new THREE.CanvasTexture(new FlakesTexture());
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.x = 10;
+        texture.repeat.y = 6;
+
+        const sphereMaterial = { 
+                color: 0xFF0000, 
+                clearcoatRoughness: 0.1, 
+                clearcoat: 1.0, 
+                roughness: 0.5,
+                metalness: 0.9, 
+                normalMap: texture,     //changes only the lightning
+                normalScale: new THREE.Vector2(0.15, 0.15),
+                envMap: envmap.texture
+        };
+
+        let sphereGeo = new THREE.SphereGeometry(140, 80, 80);
+        let sphereMat = new THREE.MeshPhysicalMaterial(sphereMaterial);
+        let sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+        scene.add(sphereMesh); 
+
+        animate();
+
+    })
+
+}
+
+        function animate(){
+            controls.update();
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        init();
+        
+    </script>
+
+    <footer>
+        &copy; 2023 Snehal
+    </footer>
+
+</body>
+
+</html>
